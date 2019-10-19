@@ -7,7 +7,7 @@
   Torch >= 0.40
   
 # Demo
-  $ python cfg weights prototxt caffemodel
+  $ python cfg[in] weights[in] prototxt[out] caffemodel[out]
   
   Example
 ```
