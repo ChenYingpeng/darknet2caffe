@@ -4,7 +4,7 @@
 
   Caffe
 
-  Torch >= 0.40
+  Pytorch >= 0.40
   
 # Demo
   $ python cfg[in] weights[in] prototxt[out] caffemodel[out]
