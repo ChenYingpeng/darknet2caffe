@@ -1,6 +1,6 @@
 # The caffe module needs to be on the Python path;
 #  we'll add it here explicitly.
-caffe_root='/home/ss/caffe/'
+caffe_root='/home/chen/caffe/'
 #os.chdir(caffe_root)
 import sys
 sys.path.insert(0,caffe_root+'python')
@@ -99,8 +99,8 @@ def darknet2caffe(cfgfile, weightfile, protofile, caffemodel):
             layer_id = layer_id + 1
         elif block['type'] == 'cost':
             layer_id = layer_id + 1
-	elif block['type'] == 'upsample':
-	    layer_id = layer_id + 1
+        elif block['type'] == 'upsample':
+            layer_id = layer_id + 1
         else:
             print('unknow layer type %s ' % block['type'])
             layer_id = layer_id + 1
@@ -223,19 +223,21 @@ def cfg2prototxt(cfgfile):
                 layers.append(scale_layer)
 
             if block['activation'] != 'linear':
-                relu_layer = OrderedDict()
-                relu_layer['bottom'] = bottom
-                relu_layer['top'] = bottom
+                activate_layer = OrderedDict()
+                activate_layer['bottom'] = bottom
+                activate_layer['top'] = bottom
                 if block.has_key('name'):
-                    relu_layer['name'] = '%s-act' % block['name']
+                    activate_layer['name'] = '%s-act' % block['name']
                 else:
-                    relu_layer['name'] = 'layer%d-act' % layer_id
-                relu_layer['type'] = 'ReLU'
+                    activate_layer['name'] = 'layer%d-act' % layer_id
                 if block['activation'] == 'leaky':
+                    activate_layer['type'] = 'ReLU'
                     relu_param = OrderedDict()
                     relu_param['negative_slope'] = '0.1'
-                    relu_layer['relu_param'] = relu_param
-                layers.append(relu_layer)
+                    activate_layer['relu_param'] = relu_param
+                elif block['activation'] == 'mish':
+                    activate_layer['type'] = 'Mish' 
+                layers.append(activate_layer)
             topnames[layer_id] = bottom
             layer_id = layer_id+1
         elif block['type'] == 'depthwise_convolutional':
@@ -352,6 +354,7 @@ def cfg2prototxt(cfgfile):
             bottom = avg_layer['top']
             topnames[layer_id] = bottom
             layer_id = layer_id+1
+
         elif block['type'] == 'region':
             if True:
                 region_layer = OrderedDict()
@@ -374,69 +377,49 @@ def cfg2prototxt(cfgfile):
             layer_id = layer_id + 1
 
         elif block['type'] == 'route':
-    	    route_layer = OrderedDict()
-	    layer_name = str(block['layers']).split(',')
-	    #print(layer_name[0])
-	    bottom_layer_size = len(str(block['layers']).split(','))
-  	    #print(bottom_layer_size)
-	    if(1 == bottom_layer_size):
-            	prev_layer_id = layer_id + int(block['layers'])
-            	bottom = topnames[prev_layer_id]
-            	#topnames[layer_id] = bottom
-		route_layer['bottom'] = bottom
-	    if(2 == bottom_layer_size):
-		prev_layer_id1 = layer_id + int(layer_name[0])
-		#print(prev_layer_id1)
-		prev_layer_id2 = int(layer_name[1]) + 1
-		print(topnames)
-		bottom1 = topnames[prev_layer_id1]
-	 	bottom2 = topnames[prev_layer_id2]
-		route_layer['bottom'] = [bottom1, bottom2]
-	    if(4 == bottom_layer_size):
-		prev_layer_id1 = layer_id + int(layer_name[0])
-		prev_layer_id2 = layer_id + int(layer_name[1])
-		prev_layer_id3 = layer_id + int(layer_name[2])
-		prev_layer_id4 = layer_id + int(layer_name[3])
+            route_layer = OrderedDict()
+            layer_name = str(block['layers']).split(',')
+            bottom_layer_size = len(str(block['layers']).split(','))
+            bottoms = []
+            for i in range(bottom_layer_size):
+                if int(layer_name[i]) < 0:
+                    prev_layer_id = layer_id + int(layer_name[i])
+                else:
+                    prev_layer_id = int(layer_name[i]) + 1
+                bottom = topnames[prev_layer_id]
+                bottoms.append(bottom)
+            route_layer['bottom'] = bottoms
 
-		bottom1 = topnames[prev_layer_id1]
-	 	bottom2 = topnames[prev_layer_id2]
-		bottom3 = topnames[prev_layer_id3]
-	 	bottom4 = topnames[prev_layer_id4]
-		route_layer['bottom'] = [bottom1, bottom2,bottom3,bottom4]
-	    if block.has_key('name'):
+            if block.has_key('name'):
                 route_layer['top'] = block['name']
                 route_layer['name'] = block['name']
             else:
                 route_layer['top'] = 'layer%d-route' % layer_id
                 route_layer['name'] = 'layer%d-route' % layer_id
-	    route_layer['type'] = 'Concat'
-	    print(route_layer)
-	    layers.append(route_layer)
-	    bottom = route_layer['top']
-	    print(layer_id)
+            route_layer['type'] = 'Concat'
+            layers.append(route_layer)
+            bottom = route_layer['top']
             topnames[layer_id] = bottom
-	    layer_id = layer_id + 1
+            layer_id = layer_id + 1
 
-	elif block['type'] == 'upsample':
-	    upsample_layer = OrderedDict()
-	    print(block['stride'])
-	    upsample_layer['bottom'] = bottom
-	    if block.has_key('name'):
+        elif block['type'] == 'upsample':
+            upsample_layer = OrderedDict()
+            upsample_layer['bottom'] = bottom
+            if block.has_key('name'):
                 upsample_layer['top'] = block['name']
                 upsample_layer['name'] = block['name']
             else:
                 upsample_layer['top'] = 'layer%d-upsample' % layer_id
                 upsample_layer['name'] = 'layer%d-upsample' % layer_id
-	    upsample_layer['type'] = 'Upsample'
-	    upsample_param = OrderedDict()
-	    upsample_param['scale'] = block['stride']
-	    upsample_layer['upsample_param'] = upsample_param
- 	    print(upsample_layer)
-	    layers.append(upsample_layer)
-	    bottom = upsample_layer['top']
-	    print('upsample:',layer_id)
+            upsample_layer['type'] = 'Upsample'
+            upsample_param = OrderedDict()
+            upsample_param['scale'] = block['stride']
+            upsample_layer['upsample_param'] = upsample_param
+            layers.append(upsample_layer)
+            bottom = upsample_layer['top']
+            print('upsample:',layer_id)
             topnames[layer_id] = bottom
-	    layer_id = layer_id + 1
+            layer_id = layer_id + 1
 
         elif block['type'] == 'shortcut':
             prev_layer_id1 = layer_id + int(block['from'])
@@ -457,7 +440,7 @@ def cfg2prototxt(cfgfile):
             shortcut_layer['eltwise_param'] = eltwise_param
             layers.append(shortcut_layer)
             bottom = shortcut_layer['top']
- 
+
             if block['activation'] != 'linear':
                 relu_layer = OrderedDict()
                 relu_layer['bottom'] = bottom
