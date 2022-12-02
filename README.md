@@ -42,8 +42,8 @@ message LayerParameter {
 caffe concat is not implemented with 'groups' and 'group_id' features yet (route layers in yolov4-tiny config). 
 For yolov4-tiny caffe, you need to remake the caffe with those options. To make it easier, you can change caffe layers in the prototxt file manually:
 1. Load darknet config and create your .prototxt file with 'darknet2caffe.py' (the errors appears but the file was still created).
-2. Check your .prototxt and the 'yolov4_tiny_template.prototxt' (in /cfg)
-3. Add modified layers from the template to your caffe config (layers 3, 11 and 19.)
+2. Check your .prototxt and the `prototxt/yolov4_tiny_template.prototxt`
+3. Add modified layers from `prototxt/yolov4_tiny_template.prototxt` caffe config (layers 3, 11 and 19.)
 4. Comment the following lines in 'darknet2caffe.py' to prevent creating new configs:
 ```
 	++#net_info = cfg2prototxt(cfgfile)
