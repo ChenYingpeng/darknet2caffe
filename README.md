@@ -45,8 +45,10 @@ For yolov4-tiny caffe, you need to remake the caffe with those options. To make 
 2. check your .prototxt and the 'yolov4_tiny_template.prototxt' (in /cfg)
 3. add modified layers from the template to your caffe config (layers 3, 11 and 19.)
 4. comment the following lines in 'darknet2caffe.py' to prevent creating new configs:
-	    ++net_info = cfg2prototxt(cfgfile)
-		++save_prototxt(net_info , protofile, region=False)
+```
+	++#net_info = cfg2prototxt(cfgfile)
+	++#save_prototxt(net_info , protofile, region=False)
+```
 5. load the new modified prototxt to create the caffe weights file.
 
 # Demo
